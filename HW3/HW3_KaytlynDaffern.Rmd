@@ -1,0 +1,154 @@
+---
+title: "hw3: Simple Linear Regression"
+date: "2024-10-20"
+output: ioslides_presentation
+---
+
+<style type="text/css">
+body p, div, h1, h2, h3, h4, h5 {
+color: black;
+font-family: Modern Computer Roman; }
+slides > slide.title-slide hgroup h1 { color: #8C1D40; <!--the maroon color--> }
+h2 {
+color: #8C1D40; <!-- the maroon color-->
+}
+</style> <!-- end of defining font in various parts of slides -->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(knitr)
+library(ggplot2)
+library(plotly)
+data(mtcars)
+```
+
+## Introduction to Simple Linear Regression
+
+Linear Regression is used to model the relationship between two variables by fitting a linear equation to observed data.
+
+\[
+y = \beta_0 + \beta_1 x + \epsilon
+\]
+
+Where:
+
+- \( y \): the dependent variable, what we want to predict about the data
+- \( \beta_0 \): the intercept, the value of \( y \) when \( x \) is 0
+- \( \beta_1 \): the slope of the regression line, the change in \( y \) for a one-unit change in \( x \)
+- \( x \): the independent variable, the predictor or input variable
+- \( \epsilon \): the error term, the difference between the actual and predicted values of \( y \)
+
+
+## Introduction to mtcars Dataset 
+
+We will predict `mpg` (miles per gallon) based on `hp` (horsepower) from the `mtcars` dataset. Here is a snippet of the dataset:
+
+```{r}
+head(mtcars)
+```
+
+
+## Scatter plot with regression line
+``` {r, message=FALSE}
+ggplot(mtcars, aes(x = hp, y = mpg)) +
+  geom_point(color = "lightblue") +
+  geom_smooth(method = "lm", color = "pink") +
+  labs(title = "Miles per Gallon vs. Horsepower",
+       x = "hp",
+       y = "mpg") +
+  theme_minimal()
+```
+
+## The Least Squares Method
+
+In linear regression, we estimate the coefficients \( \beta_0 \) and \( \beta_1 \) using the least squares method, which minimizes the sum of squared errors:
+
+\[
+SSE = \sum_{i=1}^{n} \left( y_i - \hat{y}_i \right)^2
+\]
+
+Where:
+
+- \( y_i \) is the observed value of the dependent variable
+- \( \hat{y}_i \) is the predicted value
+- \( n \) is the number of observations
+
+## Fitting the Linear Model
+
+``` {r}
+# Fitting the linear regression model
+model <- lm(mpg ~ hp, data = mtcars)
+
+# Get the summary of the model
+model_summary <- summary(model)
+
+# Extract coefficients
+coefficients <- model_summary$coefficients
+
+# Table of coefficients using kable
+kable(coefficients, digits = 4, col.names = c("Coefficients", "Estimate", "Std. Error", "t value", "p value"))
+```
+
+
+Where:
+
+- Estimate: the expected change in mpg for a one-unit change in the predictor variable
+- Std. error: variability of the coefficient estimate, smaller values imply more precision
+- t value: how many standard deviations the estimate is from zero
+- p value: statistical significance of the coefficient
+
+## Residuals vs Fitted Plot
+
+``` {r}
+# Residuals vs fitted plot
+ggplot(mtcars, aes(x = fitted(model), y = resid(model))) +
+  geom_point(color = "purple") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(title = "Residuals vs Fitted Values",
+       x = "Fitted Values",
+       y = "Residuals") +
+  theme_minimal()
+```
+
+Displays the residuals (the differences between observed and predicted values) against the fitted values from the regression model.
+
+## Plot of the Regression
+
+``` {r, message=FALSE}
+# Grid of horsepower values (hp) for predictions
+hp_grid <- seq(min(mtcars$hp), max(mtcars$hp), length.out = 100)
+
+# Predict mpg values for the grid
+predicted_mpg <- predict(model, newdata = data.frame(hp = hp_grid))
+
+# Create the 3D scatter plot with black dots for the actual data
+p <- plot_ly() %>%
+  add_markers(data = mtcars, 
+              x = ~hp, 
+              y = ~mpg, 
+              z = ~mpg, 
+              marker = list(size = 5, color = 'rgba(0, 0, 0, 1)')) # Black dots
+
+# Tthe surface (fitted values) as a light blue surface
+p <- p %>% add_surface(x = hp_grid, 
+                       y = predicted_mpg, 
+                       z = matrix(predicted_mpg, nrow = length(hp_grid), ncol = length(hp_grid)), 
+                       colorscale = list(c(0, 1), c('rgba(173, 216, 230, 0.8)', 'rgba(173, 216, 230, 0.8)')),
+                       showscale = FALSE) # Light blue surface
+
+p <- p %>% layout(title = "3D Plot of Horsepower vs. MPG with Fitted Values",
+                  scene = list(
+                    xaxis = list(title = "Horsepower"),
+                    yaxis = list(title = "Miles per Gallon"),
+                    zaxis = list(title = "Fitted Values")
+                  ))
+
+# Show the plot
+p
+```
+
+The graph displays the relationship between horsepower, miles per gallon, and the fitted values from the linear regression model. The lightblue plane highlights the model’s fit to the data, represented in black dots.
+
+## Conclusion
+
+This presentation explored the basics of simple linear regression using the mtcars dataset. The relationship between horsepower and miles per gallon was modeled, and the results were visualized through scatter plots, residuals, and a 3D regression surface. The regression line provided insight into how horsepower impacts fuel efficiency, though it is not a perfect fit. This analysis highlights how regression can help to understand relationships between variables, even when data shows some variability.
